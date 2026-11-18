@@ -577,6 +577,8 @@
 
   // Shows the device's own on-screen keyboard (Android TV / smart TV / phone)
   function openKeyboard(input) {
+    // inside the Android TV app: a native search box, which always shows the TV keyboard
+    if (window.AndroidTV && window.AndroidTV.openSearch) { window.AndroidTV.openSearch(input.value || ''); return; }
     try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
     try { input.click(); } catch (e) { /* ignore */ }
     if (window.AndroidTV && window.AndroidTV.showKeyboard) window.AndroidTV.showKeyboard();
@@ -1124,6 +1126,15 @@
     return goBack();
   };
   window.tvPause = function () { if (playerOpen()) { v.pause(); persist(); } };
+  // text typed in the native search box of the Android TV app
+  window.tvSearch = function (q) {
+    var cur = currentView();
+    var input = cur && cur.name === 'search' ? $('.search-box', cur.el) : null;
+    if (!input) return;
+    input.value = q || '';
+    focus(input, true);
+    if (input._submit) input._submit();
+  };
 
   // mouse / touch: hovering moves focus too, so it works with air-mouse remotes
   // only a mouse that really moved may take focus (not a page scrolling under a resting cursor)
