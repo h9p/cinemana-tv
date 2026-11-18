@@ -130,20 +130,56 @@
 
   // Own smooth scrolling: old TV browsers ignore scrollTo({behavior}) / scrollBy({...}).
   // Setting scrollLeft / scrollTop by a delta works the same in every engine, RTL included.
-  function smoothScroll(el, prop, to) {
+  // frames are synced to the screen refresh (60 fps) with requestAnimationFrame;
+  // a plain timer is the fallback when the page is hidden or the engine lacks rAF
+  var rAF = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+  var cAF = window.cancelAnimationFrame || window.webkitCancelAnimationFrame || function () {};
+  function nextFrame(fn) {
+    // whichever comes first: the next screen frame, or a backup timer if frames are paused
+    var h = {}, done = false;
+    function run() {
+      if (done) return;
+      done = true;
+      if (h.raf != null) cAF(h.raf);
+      clearTimeout(h.t);
+      fn();
+    }
+    if (rAF) h.raf = rAF(run);
+    h.t = setTimeout(run, 34);
+    return h;
+  }
+  function cancelFrame(h) {
+    if (!h) return;
+    if (h.raf != null) cAF(h.raf);
+    if (h.t != null) clearTimeout(h.t);
+  }
+  function smoothScroll(el, prop, to, dur) {
     var key = '_anim_' + prop;
-    if (el[key]) clearTimeout(el[key]);
-    var from = el[prop], start = Date.now(), dur = 200;
+    cancelFrame(el[key]);
+    el[key] = null;
+    var from = el[prop], start = Date.now();
+    dur = dur || 180;
     if (Math.abs(to - from) < 1) return;
     function step() {
       var p = Math.min(1, (Date.now() - start) / dur), k = 1 - Math.pow(1 - p, 3);
-      el[prop] = from + (to - from) * k;
-      el[key] = p < 1 ? setTimeout(step, 16) : 0;
+      el[prop] = Math.round(from + (to - from) * k);
+      el[key] = p < 1 ? nextFrame(step) : null;
     }
-    step();
+    el[key] = nextFrame(step);
+  }
+
+  // keep the selection visible inside any scrolling list (player menus etc.)
+  function keepInList(list, e, instant) {
+    var r = e.getBoundingClientRect(), lr = list.getBoundingClientRect();
+    var margin = Math.min(lr.height * 0.25, r.height * 2);
+    if (r.top >= lr.top + margin && r.bottom <= lr.bottom - margin) return;
+    var to = list.scrollTop + (r.top + r.height / 2) - (lr.top + lr.height / 2);
+    if (instant) list.scrollTop = to; else smoothScroll(list, 'scrollTop', to);
   }
 
   function scrollToFocus(e) {
+    var menu = e.closest('.p-menu');
+    if (menu) { keepInList(menu, e); return; }
     var row = e.closest('.row-scroll');
     if (row) {
       var r = e.getBoundingClientRect(), rr = row.getBoundingClientRect();
@@ -761,7 +797,7 @@
   function updateFamilyUI() {
     var on = familyOn();
     var nav = $('[data-nav=family] .lbl');
-    if (nav) nav.textContent = 'مشاهدة عائلية: ' + (on ? 'مفعّلة' : 'متوقفة');
+    if (nav) nav.textContent = on ? 'مشاهدة عائلية ✓' : 'مشاهدة عائلية';
     var navBtn = $('[data-nav=family]');
     if (navBtn) navBtn.classList.toggle('on', on);
     var lbl = $('#p-fam-lbl');
@@ -1052,8 +1088,11 @@
       if (it.on) onEl = b;
     });
     m.hidden = false;
+    m.scrollTop = 0;
     showUI(true);
-    focus(onEl || $('.m-item', list));
+    var target = onEl || $('.m-item', list);
+    focus(target, true);
+    keepInList(m, target, true);
   }
   function closeMenu(silent) {
     var m = $('#p-menu');
@@ -1095,11 +1134,17 @@
   };
   $('#p-episodes').onclick = function () {
     if (!P.episodes) return;
-    var season = P.item.season;
-    openMenu('الموسم ' + season, P.episodes.filter(function (e) { return e.season === season; }).map(function (e) {
-      return { label: 'الحلقة ' + e.episodeNummer, on: e.nb === P.item.nb, action: function () {
-        persist(); playVideo(e, { episodes: P.episodes, series: P.series });
-      } };
+    // all seasons, the episode playing now is marked and the list opens scrolled to it
+    var seasons = {};
+    P.episodes.forEach(function (e) { seasons[e.season] = 1; });
+    var many = Object.keys(seasons).length > 1;
+    openMenu('الحلقات', P.episodes.map(function (e) {
+      var now = e.nb === P.item.nb;
+      return { label: (many ? 'الموسم ' + e.season + ' • ' : '') + 'الحلقة ' + e.episodeNummer + (now ? '  (الحالية)' : ''),
+        on: now, action: function () {
+          if (now) return;
+          persist(); playVideo(e, { episodes: P.episodes, series: P.series });
+        } };
     }));
   };
 

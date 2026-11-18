@@ -9,8 +9,8 @@ android {
         applicationId 'com.humam.cinemahumam'
         minSdk 21
         targetSdk 35
-        versionCode 3
-        versionName '1.2'
+        versionCode 4
+        versionName '1.3'
     }
     // the web app in ../../www is packaged as the APK's assets
     sourceSets { main { assets.srcDirs = ['../../www'] } }

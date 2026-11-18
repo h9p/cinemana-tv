@@ -16,28 +16,31 @@ img { display: block; }
 #app { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: -webkit-box; display: -webkit-flex; display: flex; }
 
 /* ---------- Sidebar (right side) ---------- */
-#sidebar {
-  position: relative; z-index: 20; -webkit-flex: 0 0 5.2rem; flex: 0 0 5.2rem; width: 5.2rem;
-  background: #0e1118; border-left: 1px solid #2a3142;
-  display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column;
-  padding: 1.5rem .7rem; overflow: hidden; -webkit-transition: width .2s, flex-basis .2s; transition: width .2s, flex-basis .2s;
-}
-#sidebar.open { -webkit-flex-basis: 15rem; flex-basis: 15rem; width: 15rem; box-shadow: -1rem 0 3rem rgba(0,0,0,.65); }
-.brand { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 0 0 1.4rem; white-space: nowrap; }
+/* The sidebar floats over the page and never changes size: opening it only slides a background
+   panel (transform → GPU) and fades the labels (opacity → GPU), so it stays smooth on weak TV boxes. */
+#sidebar { position: absolute; z-index: 20; top: 0; bottom: 0; right: 0; width: 5.2rem; padding: 1.5rem .7rem; }
+.side-bg { position: absolute; top: 0; bottom: 0; right: 0; width: 15rem; background: #0e1118; border-left: 1px solid #2a3142;
+  -webkit-transform-origin: 100% 50%; transform-origin: 100% 50%; -webkit-transform: scaleX(.3467); transform: scaleX(.3467);
+  -webkit-transition: -webkit-transform .16s ease-out; transition: transform .16s ease-out; will-change: transform; }
+#sidebar.open .side-bg { -webkit-transform: scaleX(1); transform: scaleX(1); }
+#sidebar:not(.open) .nav-item, #sidebar:not(.open) .brand { pointer-events: none; }
+#sidebar:not(.open) .nav-item .ic, #sidebar:not(.open) .brand-mark { pointer-events: auto; }
+.brand { position: relative; width: 13.6rem; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 0 0 1.4rem; white-space: nowrap; }
 .brand-mark { -webkit-flex: 0 0 auto; flex: 0 0 auto; width: 3.6rem; height: 3.6rem; border-radius: .8rem; margin-right: -.1rem; box-shadow: 0 0 1rem rgba(212,160,23,.35); }
-.brand-text { font-size: 1.3rem; font-weight: 700; margin-right: .7rem; opacity: 0; -webkit-transition: opacity .2s; transition: opacity .2s; }
+.brand-text { font-size: 1.3rem; font-weight: 700; margin-right: .7rem; opacity: 0; -webkit-transition: opacity .16s; transition: opacity .16s; }
 .brand-text b { color: #f2c14e; }
 #sidebar.open .brand-text { opacity: 1; }
-.nav-item { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: .85rem .9rem; margin-bottom: .5rem;
-  border-radius: .7rem; white-space: nowrap; color: #9aa3b5; font-size: 1.15rem; outline: none; text-align: right; width: 100%; }
+.nav-item { position: relative; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: .85rem .9rem; margin-bottom: .5rem;
+  border-radius: .7rem; white-space: nowrap; color: #9aa3b5; font-size: 1.15rem; outline: none; text-align: right; width: 13.6rem; }
 .nav-item .ic { -webkit-flex: 0 0 auto; flex: 0 0 auto; width: 1.8rem; text-align: center; font-size: 1.4rem; }
-.nav-item .lbl { margin-right: 1rem; opacity: 0; -webkit-transition: opacity .2s; transition: opacity .2s; }
+.nav-item .lbl { margin-right: 1rem; opacity: 0; -webkit-transition: opacity .16s; transition: opacity .16s; }
+#sidebar:not(.open) .nav-item.focused { background: none; }
 #sidebar.open .nav-item .lbl { opacity: 1; }
 .nav-item.active { color: #f2c14e; }
 .nav-item.focused { background: #fff; color: #000; }
 
 /* ---------- Views ---------- */
-#views { position: relative; -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
+#views { position: relative; -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; margin-right: 5.2rem; }
 .view { position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 4rem; -webkit-overflow-scrolling: touch; }
 .view::-webkit-scrollbar { display: none; }
 .view-title { font-size: 2rem; font-weight: 800; margin: 2rem 3rem 1rem; }
@@ -200,9 +203,12 @@ body.playing #rights { display: none; }
 
 /* ---------- Portrait screens (phones) ---------- */
 .narrow #app { -webkit-flex-direction: column-reverse; flex-direction: column-reverse; }
-.narrow #sidebar, .narrow #sidebar.open { -webkit-flex: 0 0 auto; flex: 0 0 auto; width: 100%; -webkit-flex-direction: row; flex-direction: row;
-  -webkit-justify-content: space-around; justify-content: space-around; padding: .4rem .4rem 2rem; border: 0; border-top: 1px solid #2a3142; box-shadow: none; }
-.narrow .brand { display: none; }
+.narrow #sidebar, .narrow #sidebar.open { position: relative; top: auto; right: auto; bottom: auto; width: 100%; background: #0e1118;
+  display: -webkit-flex; display: flex; -webkit-flex-direction: row; flex-direction: row;
+  -webkit-justify-content: space-around; justify-content: space-around; padding: .4rem .4rem 2rem; border-top: 1px solid #2a3142; }
+.narrow .side-bg, .narrow .brand { display: none; }
+.narrow #views { margin-right: 0; }
+.narrow #sidebar .nav-item { pointer-events: auto; }
 .narrow .nav-item { -webkit-flex-direction: column; flex-direction: column; width: auto; padding: .4rem; margin: 0; font-size: .8rem; }
 .narrow .nav-item .lbl { opacity: 1; margin: .2rem 0 0; }
 .narrow .rights { font-size: .7rem; padding: .3rem; background: rgba(0,0,0,.8); }
@@ -226,3 +232,4 @@ body.playing #rights { display: none; }
 .nav-item.on .ic { color: #6fdc8c; }
 #sidebar.open .nav-item.on .lbl { color: #6fdc8c; }
 .nav-item.on.focused .lbl { color: #0a6b2a; }
+.p-menu::-webkit-scrollbar { display: none; }
