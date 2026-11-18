@@ -1,6 +1,6 @@
-package com.humam.cinemanatv;
+package com.humam.cinemahumam;
 
-// سينمانا TV — جميع الحقوق محفوظة للمهندس همام أبو الحسن
+// سينما همام — جميع الحقوق محفوظة للمهندس همام أبو الحسن
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

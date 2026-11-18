@@ -1,4 +1,4 @@
-/* Cinemana TV — remote-friendly client for the Cinemana server API.
+/* سينما همام (Cinema Humam) — remote-friendly TV app.
  * جميع الحقوق محفوظة للمهندس همام أبو الحسن
  * Plain ES2017 (no optional chaining) so it runs on older TV browsers / WebViews.
  */

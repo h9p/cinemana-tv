@@ -12,4 +12,4 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     res.end(data);
   });
-}).listen(port, '0.0.0.0', () => console.log('Cinemana TV on http://localhost:' + port));
+}).listen(port, '0.0.0.0', () => console.log('Cinema Humam on http://localhost:' + port));

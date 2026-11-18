@@ -17,5 +17,5 @@ jobs:
       - run: gradle -p android assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: CinemanaTV-apk
+          name: CinemaHumam-apk
           path: android/app/build/outputs/apk/release/*.apk

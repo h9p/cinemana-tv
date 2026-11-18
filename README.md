@@ -1,6 +1,6 @@
-# سينمانا TV
+# سينما همام
 
-تطبيق شاشات يعرض محتوى سيرفر سينمانا (`cinemana.shabakaty.cc/api/android/`) بواجهة مصممة للتحكم بالريموت (الأسهم + OK + رجوع)، ويعمل أيضاً بالماوس واللمس، ويتكيّف مع كل أحجام الشاشات من الموبايل إلى 4K.
+تطبيق شاشات يعرض الأفلام والمسلسلات بواجهة مصممة للتحكم بالريموت (الأسهم + OK + رجوع)، ويعمل أيضاً بالماوس واللمس، ويتكيّف مع كل أحجام الشاشات من الموبايل إلى 4K.
 
 جميع الحقوق محفوظة للمهندس همام أبو الحسن.
 
@@ -19,13 +19,13 @@ node serve.js 8080
 **الطريقة 1 — Android Studio:** افتح مجلد `android` ثم Build ‣ Build APK(s).
 الملف يطلع في `android/app/build/outputs/apk/`.
 
-**الطريقة 2 — بدون Android Studio (GitHub):** ارفع مجلد `cinemana-tv` كمستودع على GitHub،
+**الطريقة 2 — بدون Android Studio (GitHub):** ارفع المشروع كمستودع على GitHub،
 وراح يبني `.github/workflows/build-apk.yml` الـ APK تلقائياً. حمّله من صفحة Actions ‣ Artifacts.
 
 التثبيت على التلفزيون: انقل الـ APK بفلاشة أو بتطبيق "Send Files to TV"، أو:
 ```
 adb connect <IP التلفزيون>
-adb install CinemanaTV.apk
+adb install CinemaHumam.apk
 ```
 
 ## أزرار الريموت

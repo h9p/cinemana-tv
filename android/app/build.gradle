@@ -1,10 +1,12 @@
 plugins { id 'com.android.application' }
 
+base { archivesName = 'CinemaHumam' }   // APK file name: CinemaHumam-release.apk
+
 android {
-    namespace 'com.humam.cinemanatv'
+    namespace 'com.humam.cinemahumam'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.humam.cinemanatv'
+        applicationId 'com.humam.cinemahumam'
         minSdk 21
         targetSdk 35
         versionCode 1
