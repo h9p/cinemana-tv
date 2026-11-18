@@ -14,10 +14,24 @@ android {
     }
     // the web app in ../../www is packaged as the APK's assets
     sourceSets { main { assets.srcDirs = ['../../www'] } }
+    // Fixed release key, so every build can update the installed app in place.
+    // CI supplies it from GitHub secrets; without these env vars the build falls back to the debug key.
+    def ksFile = System.getenv('KEYSTORE_FILE')
+    signingConfigs {
+        release {
+            if (ksFile) {
+                storeFile file(ksFile)
+                storeType 'pkcs12'
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug   // replace with your own key before publishing to a store
+            signingConfig ksFile ? signingConfigs.release : signingConfigs.debug
         }
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
