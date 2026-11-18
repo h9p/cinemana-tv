@@ -18,6 +18,7 @@
       <button class="nav-item f" data-nav="movies"><span class="ic">🎬</span><span class="lbl">أفلام</span></button>
       <button class="nav-item f" data-nav="series"><span class="ic">📺</span><span class="lbl">مسلسلات</span></button>
       <button class="nav-item f" data-nav="history"><span class="ic">⟲</span><span class="lbl">تابع المشاهدة</span></button>
+      <button class="nav-item f" data-nav="family"><span class="ic">👪</span><span class="lbl">مشاهدة عائلية</span></button>
     </nav>
     <main id="views"></main>
   </div>
@@ -28,6 +29,7 @@
     <div id="p-spinner" class="spinner" hidden></div>
     <button id="p-skip" class="skip-btn f" hidden>تخطي المقدمة ⏭</button>
     <div id="p-ui">
+      <div class="p-shade"></div>
       <div class="p-top">
         <div id="p-title" class="p-title"></div>
         <div id="p-sub" class="p-subtitle"></div>
@@ -53,6 +55,7 @@
             <button id="p-quality" class="pbtn f">الدقة: <b id="p-q-lbl">—</b></button>
             <button id="p-subsbtn" class="pbtn f">الترجمة: <b id="p-s-lbl">—</b></button>
             <button id="p-subsize" class="pbtn f">حجم الخط</button>
+            <button id="p-family" class="pbtn f">عائلي: <b id="p-fam-lbl">—</b></button>
             <button id="p-speed" class="pbtn f">السرعة: <b id="p-sp-lbl">1x</b></button>
             <button id="p-episodes" class="pbtn f" hidden>الحلقات</button>
           </div>

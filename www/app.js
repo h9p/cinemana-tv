@@ -113,24 +113,54 @@
 
   function isNarrow() { return window.innerWidth < window.innerHeight; }
 
+  // Size everything from the real screen: 1rem ≈ 1/87 of a 16:9 screen, so a 720p,
+  // 1080p or 4K TV (or an old box that reports 960×540) all show the same layout.
+  function fitScreen() {
+    var w = window.innerWidth || document.documentElement.clientWidth || 1280;
+    var h = window.innerHeight || document.documentElement.clientHeight || 720;
+    var narrow = w < h, fs;
+    if (narrow) fs = Math.max(11, Math.min(22, w / 27));
+    else fs = Math.max(8, Math.min(40, Math.min(w / 87, h / 49)));
+    document.documentElement.style.fontSize = fs.toFixed(2) + 'px';
+    document.documentElement.classList.toggle('narrow', narrow);
+  }
+  fitScreen();
+  window.addEventListener('resize', fitScreen);
+  window.addEventListener('orientationchange', function () { setTimeout(fitScreen, 300); });
+
+  // Own smooth scrolling: old TV browsers ignore scrollTo({behavior}) / scrollBy({...}).
+  // Setting scrollLeft / scrollTop by a delta works the same in every engine, RTL included.
+  function smoothScroll(el, prop, to) {
+    var key = '_anim_' + prop;
+    if (el[key]) clearTimeout(el[key]);
+    var from = el[prop], start = Date.now(), dur = 200;
+    if (Math.abs(to - from) < 1) return;
+    function step() {
+      var p = Math.min(1, (Date.now() - start) / dur), k = 1 - Math.pow(1 - p, 3);
+      el[prop] = from + (to - from) * k;
+      el[key] = p < 1 ? setTimeout(step, 16) : 0;
+    }
+    step();
+  }
+
   function scrollToFocus(e) {
     var row = e.closest('.row-scroll');
     if (row) {
       var r = e.getBoundingClientRect(), rr = row.getBoundingClientRect();
-      var pad = Math.min(rr.width * 0.12, 160), dx = 0;
+      var pad = Math.min(rr.width * 0.12, r.width * 1.2), dx = 0;
       if (r.left < rr.left + pad) dx = r.left - rr.left - pad;
       else if (r.right > rr.right - pad) dx = r.right - rr.right + pad;
-      if (dx) row.scrollBy({ left: dx, behavior: 'smooth' });
+      if (dx) smoothScroll(row, 'scrollLeft', row.scrollLeft + dx);
     }
     var view = e.closest('.view');
     if (!view) return;
-    if (e.closest('.hero')) { view.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    if (e.closest('.hero')) { smoothScroll(view, 'scrollTop', 0); return; }
     var anchor = e.closest('.row') || e;
     var a = anchor.getBoundingClientRect(), vr = view.getBoundingClientRect();
     if (a.height > vr.height * 0.8) { anchor = e; a = e.getBoundingClientRect(); }
     var topLimit = vr.top + vr.height * 0.12, botLimit = vr.bottom - vr.height * 0.12;
     if (a.top < topLimit || a.bottom > botLimit) {
-      view.scrollTo({ top: view.scrollTop + (a.top - vr.top) - vr.height * 0.18, behavior: 'smooth' });
+      smoothScroll(view, 'scrollTop', view.scrollTop + (a.top - vr.top) - vr.height * 0.18);
     }
   }
 
@@ -312,7 +342,7 @@
       node.innerHTML = '';
       if (banners.length) {
         var hero = el('section', 'hero');
-        hero.innerHTML = '<div class="hero-bg"></div><div class="hero-info"><h1 class="hero-title"></h1>' +
+        hero.innerHTML = '<div class="hero-bg"></div><div class="hero-shade"></div><div class="hero-info"><h1 class="hero-title"></h1>' +
           '<div class="hero-meta"></div><p class="hero-desc"></p><div class="btn-row"></div><div class="hero-dots"></div></div>';
         var idx = 0;
         var playB = el('button', 'btn primary f', '▶ شاهد الآن');
@@ -520,6 +550,10 @@
     });
   }
 
+  var KB = {
+    ar: ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي', 'ة', 'ى', 'أ', 'إ', 'آ', 'ء', 'ئ', 'ؤ'],
+    en: 'abcdefghijklmnopqrstuvwxyz0123456789'.split('')
+  };
   function showSearch() {
     var node = el('div');
     var top = el('div', 'search-top');
@@ -533,18 +567,40 @@
     input.setAttribute('inputmode', 'search');
     top.appendChild(input);
     node.appendChild(top);
-    var hint = el('div', 'search-hint', 'اضغط <b>OK</b> على مربع البحث لفتح الكيبورد، واكتب اسم الفيلم أو المسلسل');
-    node.appendChild(hint);
+    var kbd = el('div', 'kbd');
+    var lang = 'ar';
     var results = el('div');
-    node.appendChild(results);
     var timer = null, seq = 0, focusResults = false;
+    function changed() {
+      clearTimeout(timer);
+      timer = setTimeout(run, 600);
+    }
+    function drawKbd() {
+      kbd.innerHTML = '';
+      KB[lang].forEach(function (ch) {
+        var k = el('button', 'key f', esc(ch));
+        k.onclick = function () { input.value += ch; changed(); };
+        kbd.appendChild(k);
+      });
+      [['␣ مسافة', function () { input.value += ' '; changed(); }],
+       ['⌫ حذف', function () { input.value = input.value.slice(0, -1); changed(); }],
+       [lang === 'ar' ? 'English' : 'عربي', function () { lang = lang === 'ar' ? 'en' : 'ar'; drawKbd(); focus($('.key.wide', kbd)[2]); }],
+       ['✕ مسح', function () { input.value = ''; changed(); }]
+      ].forEach(function (x) {
+        var k = el('button', 'key wide f', x[0]);
+        k.onclick = x[1];
+        kbd.appendChild(k);
+      });
+    }
+    drawKbd();
+    node.appendChild(kbd);
+    node.appendChild(results);
 
     function run() {
       clearTimeout(timer);
       var q = input.value.trim();
       var my = ++seq;
-      if (norm(q).length < 2) { results.innerHTML = ''; hint.hidden = false; return; }
-      hint.hidden = true;
+      if (norm(q).length < 2) { results.innerHTML = ''; focusResults = false; return; }
       results.innerHTML = '<div class="loading-more">جارِ البحث...</div>';
       searchAll(q).then(function (r) {
         if (my !== seq) return;
@@ -560,10 +616,7 @@
         }
       });
     }
-    input.addEventListener('input', function () {
-      clearTimeout(timer);
-      timer = setTimeout(run, 600);
-    });
+    input.addEventListener('input', changed);
     // OK / Enter on the TV keyboard: search now and jump to the results
     input._submit = function () {
       input.blur();
@@ -571,14 +624,12 @@
       run();
     };
     pushView('search', node, { root: true, nav: 'search', keepFocus: true });
-    focus(input);
-    openKeyboard(input);
+    if (isNarrow()) { focus(input); openKeyboard(input); }
+    else focus($('.key', kbd));
   }
 
   // Shows the device's own on-screen keyboard (Android TV / smart TV / phone)
   function openKeyboard(input) {
-    // inside the Android TV app: a native search box, which always shows the TV keyboard
-    if (window.AndroidTV && window.AndroidTV.openSearch) { window.AndroidTV.openSearch(input.value || ''); return; }
     try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
     try { input.click(); } catch (e) { /* ignore */ }
     if (window.AndroidTV && window.AndroidTV.showKeyboard) window.AndroidTV.showKeyboard();
@@ -671,11 +722,11 @@
         eps.filter(function (e) { return e.season === s; }).forEach(function (e) {
           var p = getProg(e.nb);
           var b = el('button', 'ep f',
-            '<div class="ep-num">' + esc(e.episodeNummer) + '</div><div style="flex:1;min-width:0">' +
+            '<div class="ep-in"><div class="ep-num">' + esc(e.episodeNummer) + '</div><div class="ep-body">' +
             '<div class="ep-t">الحلقة ' + esc(e.episodeNummer) + '</div>' +
             '<div class="ep-s">' + (e.duration ? Math.round(e.duration / 60) + ' دقيقة' : '') + (e.nb === (resumeEp && resumeEp.nb) ? ' • آخر مشاهدة' : '') + '</div>' +
             (p && p.d ? '<div class="progress"><i style="width:' + Math.min(100, p.t / p.d * 100).toFixed(1) + '%"></i></div>' : '') +
-            '</div>');
+            '</div></div>');
           b.onclick = function () { playVideo(e, { episodes: eps, series: info }); };
           epList.appendChild(b);
         });
@@ -694,6 +745,36 @@
   }
 
   function epLabel(e) { return 'م' + e.season + ' • ح' + e.episodeNummer; }
+
+  // ------------------------------------------------------ FAMILY VIEWING
+  function familyOn() { return !!store.get('family', false); }
+  function familySkips(info) {
+    var d = info && info.skippingDurations, out = [];
+    if (!d || !d.start || !d.end) return out;
+    for (var i = 0; i < d.start.length && i < d.end.length; i++) {
+      var a = parseFloat(d.start[i]), b = parseFloat(d.end[i]);
+      if (b > a) out.push({ s: a, e: b });
+    }
+    out.sort(function (x, y) { return x.s - y.s; });
+    return out;
+  }
+  function updateFamilyUI() {
+    var on = familyOn();
+    var nav = $('[data-nav=family] .lbl');
+    if (nav) nav.textContent = 'مشاهدة عائلية: ' + (on ? 'مفعّلة' : 'متوقفة');
+    var navBtn = $('[data-nav=family]');
+    if (navBtn) navBtn.classList.toggle('on', on);
+    var lbl = $('#p-fam-lbl');
+    if (lbl) lbl.textContent = on ? 'مفعّلة' : 'متوقفة';
+  }
+  function toggleFamily() {
+    store.set('family', !familyOn());
+    updateFamilyUI();
+    var n = P.skips ? P.skips.length : 0;
+    toast(familyOn()
+      ? 'المشاهدة العائلية مفعّلة' + (playerOpen() ? (n ? ' — ' + n + ' مشهد راح يتخطى' : ' — هذا العنوان ما بيه مشاهد محذوفة') : '')
+      : 'المشاهدة العائلية متوقفة');
+  }
 
   // ============================================================== PLAYER
   var P = {
@@ -723,7 +804,7 @@
     $('#p-next').hidden = !(P.episodes && P.epIdx > -1 && P.epIdx < P.episodes.length - 1);
     $('#p-episodes').hidden = !P.episodes;
     $('#subs').innerHTML = '';
-    P.cues = []; P.cueI = 0; P.intro = null;
+    P.cues = []; P.cueI = 0; P.intro = null; P.skips = [];
     P.video.removeAttribute('src');
     showUI(true);
     focus($('#p-play'));
@@ -746,6 +827,9 @@
       var pref = store.get('quality', 720), pick = 0;
       files.forEach(function (f, i) { if (resNum(f) <= pref) pick = i; });
       P.intro = (info.introSkipping || [])[0] || null;
+      P.skips = familySkips(info);
+      updateFamilyUI();
+      if (familyOn() && P.skips.length) toast('مشاهدة عائلية: راح يتم تخطي ' + P.skips.length + ' مشهد');
       // subtitles: one entry per language, prefer VTT
       var byLang = {};
       (info.translations || []).forEach(function (t) {
@@ -849,6 +933,17 @@
       lastSubText = txt;
       $('#subs').innerHTML = txt ? '<span>' + esc(txt) + '</span>' : '';
     }
+    if (familyOn() && P.skips && P.skips.length && P.seekTarget == null) {
+      for (var q = 0; q < P.skips.length; q++) {
+        var sk = P.skips[q];
+        if (t >= sk.s && t < sk.e - 0.3) {
+          P.video.currentTime = sk.e;
+          P.cueI = 0;
+          toast('تم تخطي مشهد غير عائلي', 1800);
+          break;
+        }
+      }
+    }
     var skip = $('#p-skip');
     var inIntro = P.intro && t >= +P.intro.start && t < +P.intro.end - 1;
     if (skip.hidden === !!inIntro) {
@@ -859,7 +954,7 @@
 
   function applySubSize() {
     var i = store.get('subSize', 1);
-    P.root.style.setProperty('--sub-size', SUB_SIZES[i] + 'rem');
+    $('#subs').style.fontSize = (SUB_SIZES[i] * (isNarrow() ? 0.7 : 1)) + 'rem';
   }
 
   function updateBar() {
@@ -990,6 +1085,7 @@
       return { label: l, on: i === cur, action: function () { store.set('subSize', i); applySubSize(); } };
     }));
   };
+  $('#p-family').onclick = function () { toggleFamily(); };
   $('#p-speed').onclick = function () {
     openMenu('سرعة التشغيل', SPEEDS.map(function (s) {
       return { label: s === 1 ? 'عادي (1x)' : s + 'x', on: P.video.playbackRate === s, action: function () {
@@ -1163,9 +1259,11 @@
       else if (to === 'movies') showBrowse('movies');
       else if (to === 'series') showBrowse('series');
       else if (to === 'history') showHistory();
+      else if (to === 'family') toggleFamily();
     };
   });
 
   $('#year').textContent = new Date().getFullYear();
+  updateFamilyUI();
   showHome();
 })();
