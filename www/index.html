@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d12">
+  <title>سينمانا TV</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <nav id="sidebar" aria-label="القائمة الرئيسية">
+      <div class="brand"><span class="brand-mark">C</span><span class="brand-text">سينمانا <b>TV</b></span></div>
+      <button class="nav-item f" data-nav="home"><span class="ic">⌂</span><span class="lbl">الرئيسية</span></button>
+      <button class="nav-item f" data-nav="search"><span class="ic">⌕</span><span class="lbl">بحث</span></button>
+      <button class="nav-item f" data-nav="movies"><span class="ic">🎬</span><span class="lbl">أفلام</span></button>
+      <button class="nav-item f" data-nav="series"><span class="ic">📺</span><span class="lbl">مسلسلات</span></button>
+      <button class="nav-item f" data-nav="history"><span class="ic">⟲</span><span class="lbl">تابع المشاهدة</span></button>
+    </nav>
+    <main id="views"></main>
+  </div>
+
+  <div id="player" hidden>
+    <video id="video" playsinline preload="auto"></video>
+    <div id="subs" class="subs"></div>
+    <div id="p-spinner" class="spinner" hidden></div>
+    <button id="p-skip" class="skip-btn f" hidden>تخطي المقدمة ⏭</button>
+    <div id="p-ui">
+      <div class="p-top">
+        <div id="p-title" class="p-title"></div>
+        <div id="p-sub" class="p-subtitle"></div>
+      </div>
+      <div class="p-bottom" dir="ltr">
+        <div class="p-time-row">
+          <span id="p-cur">0:00</span>
+          <div id="p-bar" class="p-bar f" tabindex="0" role="slider" aria-label="شريط التقدم">
+            <div id="p-buf" class="p-buf"></div>
+            <div id="p-prog" class="p-prog"></div>
+            <div id="p-knob" class="p-knob"></div>
+          </div>
+          <span id="p-dur">0:00</span>
+        </div>
+        <div class="p-controls">
+          <div class="p-group">
+            <button id="p-back10" class="pbtn f" title="رجوع 10 ثواني">⟲10</button>
+            <button id="p-play" class="pbtn pbtn-main f" title="تشغيل/إيقاف">❚❚</button>
+            <button id="p-fwd10" class="pbtn f" title="تقديم 10 ثواني">10⟳</button>
+            <button id="p-next" class="pbtn f" title="الحلقة التالية" hidden>الحلقة التالية ⏭</button>
+          </div>
+          <div class="p-group" dir="rtl">
+            <button id="p-quality" class="pbtn f">الدقة: <b id="p-q-lbl">—</b></button>
+            <button id="p-subsbtn" class="pbtn f">الترجمة: <b id="p-s-lbl">—</b></button>
+            <button id="p-subsize" class="pbtn f">حجم الخط</button>
+            <button id="p-speed" class="pbtn f">السرعة: <b id="p-sp-lbl">1x</b></button>
+            <button id="p-episodes" class="pbtn f" hidden>الحلقات</button>
+          </div>
+        </div>
+        <div class="rights rights-player" dir="rtl">جميع الحقوق محفوظة للمهندس همام أبو الحسن ©</div>
+      </div>
+    </div>
+    <div id="p-menu" class="p-menu" hidden>
+      <div id="p-menu-title" class="p-menu-title"></div>
+      <div id="p-menu-list" class="p-menu-list"></div>
+    </div>
+  </div>
+
+  <footer id="rights" class="rights">جميع الحقوق محفوظة للمهندس همام أبو الحسن © <span id="year"></span></footer>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
