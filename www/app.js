@@ -1,5 +1,5 @@
 /* سينما همام (Cinema Humam) — remote-friendly TV app.
- * جميع الحقوق محفوظة للمهندس همام أبو الحسن
+ * جميع الحقوق محفوظة للمهندس همام محمد
  * Plain ES2017 (no optional chaining) so it runs on older TV browsers / WebViews.
  */
 (function () {
@@ -455,10 +455,71 @@
   }
 
   // ------------------------------------------------------------- SEARCH
-  var KB = {
-    ar: ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي', 'ة', 'ى', 'أ', 'إ', 'آ', 'ء', 'ئ', 'ؤ'],
-    en: 'abcdefghijklmnopqrstuvwxyz0123456789'.split('')
-  };
+  // Arabic/English normalisation so matching is by letters, not by spelling variants
+  function norm(s) {
+    return String(s || '').toLowerCase()
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, '')               // tashkeel + tatweel
+      .replace(/[\u200c-\u200f\u202a-\u202e\u2066-\u2069]/g, '')  // direction marks
+      .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+      .replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+      .replace(/[.,:;!?'"`()\[\]{}<>\-–—_\/\&*#@+|~^%$،؛؟«»]/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+  // 0 = exact title, 1 = title starts with it, 2 = a word starts with it, 3 = contains it, -1 = no match
+  function matchRank(v, q) {
+    var best = -1;
+    v._match = '';
+    var names = [v.ar_title, v.en_title];
+    String(v.other_title || '').split(/[,،]/).forEach(function (n) { names.push(n); });
+    names.forEach(function (raw) {
+      var t = norm(raw);
+      if (!t) return;
+      var r = -1;
+      if (t === q) r = 0;
+      else if (t.indexOf(q) === 0) r = 1;
+      else if ((' ' + t).indexOf(' ' + q) >= 0) r = 2;
+      else if (t.indexOf(q) >= 0) r = 3;
+      if (r >= 0 && (best < 0 || r < best)) { best = r; v._match = String(raw).trim(); }
+    });
+    return best;
+  }
+  // the server only knows one spelling (ة vs ه, ى vs ي, أ vs ا) so try the common variants too
+  function spellings(q) {
+    var v = [q];
+    var a = q.replace(/ه(?=\s|$)/g, 'ة'), b = q.replace(/ي(?=\s|$)/g, 'ى'),
+        c = q.replace(/(^|\s)ا/g, '$1أ'), d = q.replace(/(^|\s)ا/g, '$1إ');
+    [a, b, c, d].forEach(function (x) { if (v.indexOf(x) < 0) v.push(x); });
+    return v;
+  }
+  function searchAll(q) {
+    var vars = spellings(q), i = 0;
+    function next() {
+      var cur = vars[i++];
+      return Promise.all([searchType(cur, 'movies', q), searchType(cur, 'series', q)]).then(function (r) {
+        if ((r[0].length || r[1].length) || i >= vars.length) return r;
+        return next();
+      });
+    }
+    return next();
+  }
+  function searchType(q, type, typed) {
+    var enc = encodeURIComponent(q), pages = [0, 1, 2];
+    return Promise.all(pages.map(function (p) {
+      return api('AdvancedSearch?videoTitle=' + enc + '&type=' + type + '&page=' + p + '&level=' + LEVEL)
+        .catch(function () { return []; });
+    })).then(function (lists) {
+      var nq = norm(typed || q), seen = {}, out = [];
+      [].concat.apply([], lists).forEach(function (v, i) {
+        if (seen[v.nb]) return;
+        seen[v.nb] = 1;
+        var r = matchRank(v, nq);
+        if (r >= 0) out.push({ v: v, r: r, i: i });
+      });
+      out.sort(function (a, b) { return a.r - b.r || a.i - b.i; });
+      return out.map(function (x) { return x.v; });
+    });
+  }
+
   function showSearch() {
     var node = el('div');
     var top = el('div', 'search-top');
@@ -466,56 +527,59 @@
     input.type = 'search';
     input.placeholder = 'ابحث عن فيلم أو مسلسل...';
     input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('spellcheck', 'false');
+    input.setAttribute('enterkeyhint', 'search');
+    input.setAttribute('inputmode', 'search');
     top.appendChild(input);
     node.appendChild(top);
-    var kbd = el('div', 'kbd');
-    var lang = 'ar';
+    var hint = el('div', 'search-hint', 'اضغط <b>OK</b> على مربع البحث لفتح الكيبورد، واكتب اسم الفيلم أو المسلسل');
+    node.appendChild(hint);
     var results = el('div');
-    var timer = null, seq = 0;
-    function drawKbd() {
-      kbd.innerHTML = '';
-      KB[lang].forEach(function (ch) {
-        var k = el('button', 'key f', esc(ch));
-        k.onclick = function () { input.value += ch; changed(); };
-        kbd.appendChild(k);
-      });
-      [['␣ مسافة', function () { input.value += ' '; changed(); }],
-       ['⌫ حذف', function () { input.value = input.value.slice(0, -1); changed(); }],
-       [lang === 'ar' ? 'English' : 'عربي', function () { lang = lang === 'ar' ? 'en' : 'ar'; drawKbd(); focus($('.key.wide:nth-last-child(2)', kbd)); }],
-       ['✕ مسح', function () { input.value = ''; changed(); }]
-      ].forEach(function (s) {
-        var k = el('button', 'key wide f', s[0]);
-        k.onclick = s[1];
-        kbd.appendChild(k);
-      });
-    }
-    drawKbd();
-    node.appendChild(kbd);
     node.appendChild(results);
-    function changed() {
-      clearTimeout(timer);
-      timer = setTimeout(run, 500);
-    }
+    var timer = null, seq = 0, focusResults = false;
+
     function run() {
+      clearTimeout(timer);
       var q = input.value.trim();
       var my = ++seq;
-      if (q.length < 2) { results.innerHTML = ''; return; }
+      if (norm(q).length < 2) { results.innerHTML = ''; hint.hidden = false; return; }
+      hint.hidden = true;
       results.innerHTML = '<div class="loading-more">جارِ البحث...</div>';
-      var enc = encodeURIComponent(q);
-      Promise.all([
-        api('AdvancedSearch?videoTitle=' + enc + '&type=movies&page=0&level=' + LEVEL).catch(function () { return []; }),
-        api('AdvancedSearch?videoTitle=' + enc + '&type=series&page=0&level=' + LEVEL).catch(function () { return []; })
-      ]).then(function (r) {
+      searchAll(q).then(function (r) {
         if (my !== seq) return;
         results.innerHTML = '';
-        if (r[0].length) results.appendChild(rowSection('أفلام', r[0]));
-        if (r[1].length) results.appendChild(rowSection('مسلسلات', r[1]));
-        if (!r[0].length && !r[1].length) results.innerHTML = '<div class="empty">لا توجد نتائج لـ "' + esc(q) + '"</div>';
+        var render = function (v) { return card(v, { sub: v._match && norm(v._match) !== norm(title(v)) ? v._match : v.year }); };
+        if (r[0].length) results.appendChild(rowSection('أفلام (' + r[0].length + ')', r[0], { render: render }));
+        if (r[1].length) results.appendChild(rowSection('مسلسلات (' + r[1].length + ')', r[1], { render: render }));
+        if (!r[0].length && !r[1].length) results.innerHTML = '<div class="empty">لا توجد نتائج مطابقة لـ "' + esc(q) + '"</div>';
+        if (focusResults) {
+          focusResults = false;
+          var first = $('.card', results);
+          if (first) focus(first);
+        }
       });
     }
-    input.addEventListener('input', changed);
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(run, 600);
+    });
+    // OK / Enter on the TV keyboard: search now and jump to the results
+    input._submit = function () {
+      input.blur();
+      focusResults = true;
+      run();
+    };
     pushView('search', node, { root: true, nav: 'search', keepFocus: true });
-    focus(isNarrow() ? input : $('.key', kbd));
+    focus(input);
+    openKeyboard(input);
+  }
+
+  // Shows the device's own on-screen keyboard (Android TV / smart TV / phone)
+  function openKeyboard(input) {
+    try { input.focus({ preventScroll: true }); } catch (e) { input.focus(); }
+    try { input.click(); } catch (e) { /* ignore */ }
+    if (window.AndroidTV && window.AndroidTV.showKeyboard) window.AndroidTV.showKeyboard();
   }
 
   // ------------------------------------------------------------ DETAILS
@@ -989,14 +1053,14 @@
     if (typing) {
       if (k === 'left' || k === 'right' || k === 'space') return false; // caret / typing
       if (k === 'back' && e && e.key === 'Backspace' && focused.value) return false;
-      if (k === 'ok') { focused.blur(); move('down'); return true; }
+      if (k === 'ok') { if (focused._submit) focused._submit(); else { focused.blur(); move('down'); } return true; }
     }
 
     if (playerOpen()) return playerKey(k);
 
     switch (k) {
       case 'left': case 'right': case 'up': case 'down': move(k); return true;
-      case 'ok': if (focused) { if (focused.tagName === 'INPUT') focused.focus(); else focused.click(); } return true;
+      case 'ok': if (focused) { if (focused.tagName === 'INPUT') openKeyboard(focused); else focused.click(); } return true;
       case 'back': return goBack();
       default: return false;
     }

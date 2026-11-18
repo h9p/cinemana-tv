@@ -1,6 +1,6 @@
 package com.humam.cinemahumam;
 
-// سينما همام — جميع الحقوق محفوظة للمهندس همام أبو الحسن
+// سينما همام — جميع الحقوق محفوظة للمهندس همام محمد
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -113,5 +114,15 @@ public class MainActivity extends Activity {
     private class Bridge {
         @JavascriptInterface
         public void exit() { runOnUiThread(MainActivity.this::finish); }
+
+        // opens the TV's own on-screen keyboard for the focused search box
+        @JavascriptInterface
+        public void showKeyboard() {
+            runOnUiThread(() -> {
+                web.requestFocus();
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm != null) imm.showSoftInput(web, InputMethodManager.SHOW_IMPLICIT);
+            });
+        }
     }
 }
