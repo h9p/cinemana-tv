@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>سينما همام — تحميل</title>
+  <link rel="icon" type="image/png" href="/app/icon.png">
+  <style>
+    :root { --gold: #f2c14e; --gold2: #b8860b; --text: #f5f1e6; --muted: #b9ad8f; }
+    html { font-size: clamp(14px, 1.3vw, 36px); }
+    @media (max-aspect-ratio: 1/1) { html { font-size: clamp(14px, 3.6vw, 22px); } }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Segoe UI", "Noto Sans Arabic", Tahoma, Arial, sans-serif; color: var(--text);
+      background: radial-gradient(ellipse at 50% 30%, #3a2905 0%, #120c02 45%, #000 80%) fixed, #000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+      padding: 1.5rem 1rem 3.5rem; text-align: center;
+    }
+    .logo { width: 8rem; height: 8rem; border-radius: 2.2rem; box-shadow: 0 0 4rem #d4a01755, 0 1rem 3rem #000; }
+    h1 { font-size: 2.6rem; margin: 1rem 0 .2rem; background: linear-gradient(180deg, #ffe29a, var(--gold) 50%, var(--gold2));
+      -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .sub { color: var(--muted); font-size: 1.2rem; margin: 0 0 1.6rem; }
+    .actions { display: flex; flex-direction: column; gap: 1.1rem; width: min(34rem, 100%); }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: .8rem; padding: 1.1rem 1.6rem;
+      border-radius: 1.1rem; font-size: 1.5rem; font-weight: 800; text-decoration: none; color: var(--text);
+      background: #ffffff12; border: .15rem solid #f2c14e44; outline: none; transition: transform .15s, background .15s, box-shadow .15s;
+    }
+    .btn.primary { background: linear-gradient(135deg, #ffd978, var(--gold) 45%, var(--gold2)); color: #1a1203; border-color: transparent; }
+    .btn small { display: block; font-size: .85rem; font-weight: 600; opacity: .8; }
+    .btn:focus, .btn.focused { transform: scale(1.06); box-shadow: 0 0 0 .3rem #fff, 0 1rem 2.5rem #000c; }
+    .btn:not(.primary):focus, .btn:not(.primary).focused { background: #fff; color: #000; }
+    .steps { margin-top: 1.8rem; width: min(40rem, 100%); text-align: start; background: #ffffff0a; border: 1px solid #f2c14e2a;
+      border-radius: 1.1rem; padding: 1.2rem 1.6rem; }
+    .steps h2 { font-size: 1.25rem; margin: 0 0 .7rem; color: var(--gold); }
+    .steps ol { margin: 0; padding-inline-start: 1.4rem; line-height: 2; font-size: 1.1rem; }
+    .steps b { color: var(--gold); }
+    .col { display: flex; flex-direction: column; align-items: center; width: min(34rem, 100%); }
+    @media (min-aspect-ratio: 4/3) {
+      body { flex-direction: row; gap: 4rem; }
+      .steps { margin-top: 0; width: 30rem; }
+      .logo { width: 10rem; height: 10rem; }
+    }
+    .rights { position: fixed; bottom: 0; left: 0; right: 0; padding: .6rem; font-size: .95rem; color: #d9cfb5; background: linear-gradient(0deg, #000, #0000); }
+  </style>
+</head>
+<body>
+  <main class="col">
+  <img class="logo" src="/app/icon.png" alt="سينما همام">
+  <h1>سينما همام</h1>
+  <p class="sub">أفلام ومسلسلات على شاشتك — بالريموت وبدون ماوس</p>
+
+  <div class="actions">
+    <a class="btn primary" id="dl" href="/CinemaHumam.apk" download="CinemaHumam.apk">
+      ⬇ <span>تحميل التطبيق للتلفزيون<small id="apk-info">ملف APK لأجهزة Android TV والموبايل</small></span>
+    </a>
+    <a class="btn" href="/app/">▶ <span>شاهد من المتصفح الآن<small>بدون تثبيت</small></span></a>
+  </div>
+  </main>
+
+  <div class="steps">
+    <h2>طريقة التثبيت على التلفزيون</h2>
+    <ol>
+      <li>اضغط <b>تحميل التطبيق</b> وانتظر يكمل التحميل.</li>
+      <li>إذا طلب منك، فعّل <b>التثبيت من مصادر غير معروفة</b> للمتصفح أو لتطبيق Downloader.</li>
+      <li>افتح الملف واضغط <b>تثبيت</b> — بعدها تلكاه بقائمة التطبيقات باسم <b>سينما همام</b>.</li>
+    </ol>
+  </div>
+
+  <div class="rights">جميع الحقوق محفوظة للمهندس همام أبو الحسن ©</div>
+
+  <script>
+    // remote control: arrows move between the buttons, OK opens
+    (function () {
+      var btns = Array.prototype.slice.call(document.querySelectorAll('.btn'));
+      function go(i) { i = (i + btns.length) % btns.length; btns[i].focus(); }
+      document.addEventListener('keydown', function (e) {
+        var i = btns.indexOf(document.activeElement), k = e.key || '', c = e.keyCode;
+        if (k === 'ArrowDown' || k === 'ArrowLeft' || c === 40 || c === 37) { go(i + 1); e.preventDefault(); }
+        else if (k === 'ArrowUp' || k === 'ArrowRight' || c === 38 || c === 39) { go(i < 0 ? 0 : i - 1); e.preventDefault(); }
+        else if ((k === 'Enter' || c === 13) && i < 0) { go(0); e.preventDefault(); }
+      });
+      window.addEventListener('load', function () { btns[0].focus(); });
+      btns[0].focus();
+      fetch('/apk-info').then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.size) document.getElementById('apk-info').textContent =
+          'ملف APK • ' + (d.size / 1048576).toFixed(1) + ' ميغا • تحديث ' + d.date;
+      }).catch(function () {});
+    })();
+  </script>
+</body>
+</html>
